@@ -112,7 +112,7 @@ CellDMC <- function(beta.m, pheno.v, frac.m,
     
     ### guess factor input
     if (nlevels(factor(pheno.v)) == 2) {
-        message("Binary phenotype detected. Predicted change will be 1 - 0.")
+       # message("Binary phenotype detected. Predicted change will be 1 - 0.")
         pheno.v <- factor(pheno.v)
     }
     if (!is.factor(pheno.v) & !is.character(pheno.v)) 
@@ -125,18 +125,15 @@ CellDMC <- function(beta.m, pheno.v, frac.m,
   colnames(design)[(1 + ncol(frac.m)):(2*ncol(frac.m))] <- IntNames.v 
   
   ### fit linear model for each CpG
-  allCoe.m <- do.call(rbind, mclapply(seq_len(nrow(beta.m)), function(i) {
-      beta.v <- beta.m[i, ]
-      ### model
-      Int.o <- lm(beta.v ~ ., data = data.frame(design))
-    
-      ### get coe
-      IntCoe.m <- summary(Int.o)$coe[IntNames.v, ]
-      IntCoe.v <- unlist(apply(IntCoe.m, 1, function(x) list(x)))
-    
-      names(IntCoe.v) <- NULL
-      return(IntCoe.v)
-  }, mc.preschedule = TRUE, mc.cores = mc.cores, mc.allow.recursive = TRUE))
+  allCoe.m <- do.call(rbind, foreach(i = seq_len(nrow(beta.m))) %dopar% 
+                        function(i) {
+                          beta.v <- beta.m[i, ]
+                          Int.o <- lm(beta.v ~ ., data = data.frame(design))
+                          IntCoe.m <- summary(Int.o)$coe[IntNames.v, ]
+                          IntCoe.v <- unlist(apply(IntCoe.m, 1, function(x) list(x)))
+                          names(IntCoe.v) <- NULL
+                          return(IntCoe.v)
+                        })
   
   ### extract coefficients for each cell-type
   coe.ld <- lapply(seq_len(ncol(frac.m)), function(j) {
