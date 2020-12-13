@@ -126,7 +126,7 @@ CellDMC <- function(beta.m, pheno.v, frac.m,
   
   ### fit linear model for each CpG
   allCoe.m <- do.call(rbind, foreach(i = seq_len(nrow(beta.m))) %dopar% 
-                        function(i) {
+                        {
                           beta.v <- beta.m[i, ]
                           Int.o <- lm(beta.v ~ ., data = data.frame(design))
                           IntCoe.m <- summary(Int.o)$coe[IntNames.v, ]
